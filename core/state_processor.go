@@ -87,7 +87,7 @@ func (p *StateProcessor) Process(ctx context.Context, block *types.Block, stated
 	}
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 	ps := perfTimer.Start(perfutils.Finalize)
-	_ = p.engine.Finalize(ctx, p.bc, header, statedb, block.Transactions(), block.Uncles(), receipts, false)
+	_ = p.engine.Finalize(ctx, p.bc, header, statedb, block.Transactions(), receipts, false)
 	ps.Stop()
 
 	return receipts, allLogs, *usedGas, nil
