@@ -81,12 +81,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/edsrzf/mmap-go"
-  packages = ["."]
-  revision = "0bce6a6887123b67a60366d2c9fe2dfb74289d2e"
-
-[[projects]]
-  branch = "master"
   name = "github.com/elastic/gosigar"
   packages = [
     ".",
@@ -517,6 +511,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1def6cfd50eac90b3f2fa0cca996a49fc9aa52871f338eb09d86c9e54415074b"
+  inputs-digest = "916b4e78cf1a5a3fb32d8d015933800bf095ce0273f41dacfbff11c445b62f77"
   solver-name = "gps-cdcl"
   solver-version = 1

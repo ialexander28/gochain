@@ -17,6 +17,7 @@ type section int
 const (
 	ApplyMessage = iota
 	ApplyTransaction
+	CliquePrepare
 	CliqueSeal
 	CliqueSnapshot
 	CliqueVerifySeal
@@ -37,6 +38,7 @@ const (
 var sectionNames = [...]string{
 	ApplyMessage:     "ApplyMessage",
 	ApplyTransaction: "ApplyTransaction",
+	CliquePrepare:    "Clique.Prepare",
 	CliqueSeal:       "Clique.Seal",
 	CliqueSnapshot:   "Clique.snapshot",
 	CliqueVerifySeal: "Clique.verifySeal",

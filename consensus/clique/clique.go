@@ -532,7 +532,7 @@ func (c *Clique) verifySeal(ctx context.Context, chain consensus.ChainReader, he
 // header for running the transactions on top.
 func (c *Clique) Prepare(ctx context.Context, chain consensus.ChainReader, header *types.Header) error {
 	pt := perfutils.GetTimer(ctx)
-	ps := pt.Start(perfutils.CliqueSeal)
+	ps := pt.Start(perfutils.CliquePrepare)
 	defer ps.Stop()
 	// If the block isn't a checkpoint, cast a random vote (good enough for now)
 	header.Nonce = types.BlockNonce{}
@@ -543,6 +543,17 @@ func (c *Clique) Prepare(ctx context.Context, chain consensus.ChainReader, heade
 	if err != nil {
 		return err
 	}
+	// Check that we can sign.
+	if _, ok := snap.Signers[c.signer]; !ok {
+		return fmt.Errorf("not authorized to sign: %s", c.signer.Hex())
+	}
+	// Calculate and validate the difficulty.
+	diff := CalcDifficulty(snap.Signers, c.signer)
+	if diff == 0 {
+		return fmt.Errorf("signed too recently: %s", c.signer.Hex())
+	}
+	header.Difficulty = new(big.Int).SetUint64(diff)
+
 	header.Extra = ExtraEnsureVanity(header.Extra)
 	//if not checkpoint
 	if number%c.config.Epoch != 0 {
@@ -569,15 +580,6 @@ func (c *Clique) Prepare(ctx context.Context, chain consensus.ChainReader, heade
 		}
 		c.lock.RUnlock()
 	}
-	// Set the correct difficulty
-	if _, ok := snap.Signers[c.signer]; !ok {
-		return fmt.Errorf("not authorized to sign: %s", c.signer.Hex())
-	}
-	diff := CalcDifficulty(snap.Signers, c.signer)
-	if diff == 0 {
-		return fmt.Errorf("signed too recently: %s", c.signer.Hex())
-	}
-	header.Difficulty = new(big.Int).SetUint64(diff)
 
 	if number%c.config.Epoch == 0 {
 		header.Signers = snap.signers()
