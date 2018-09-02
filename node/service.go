@@ -25,6 +25,7 @@ import (
 	"github.com/gochain-io/gochain/ethdb"
 	"github.com/gochain-io/gochain/ethdb/s3"
 	"github.com/gochain-io/gochain/event"
+	"github.com/gochain-io/gochain/log"
 	"github.com/gochain-io/gochain/p2p"
 	"github.com/gochain-io/gochain/rpc"
 )
@@ -51,6 +52,7 @@ func (ctx *ServiceContext) OpenDatabase(name string, cache int, handles int) (co
 		return nil, err
 	}
 	if err := db.Open(); err != nil {
+		log.Error("Cannot open database in service context", "err", err)
 		return nil, err
 	}
 	return db, nil
