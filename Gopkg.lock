@@ -419,7 +419,10 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/sync"
-  packages = ["syncmap"]
+  packages = [
+    "semaphore",
+    "syncmap"
+  ]
   revision = "1d60e4601c6fd243af51cc01ddf169918a5407ca"
 
 [[projects]]
@@ -523,6 +526,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0ccc640b6811d3206526cabedd7dde57297a0e316397ea79464e84fdfb9f917c"
+  inputs-digest = "51f2b63f584187aa1cf1bbade9c78006d9c1a292c5bbc9a3d4557c8279ac595f"
   solver-name = "gps-cdcl"
   solver-version = 1
