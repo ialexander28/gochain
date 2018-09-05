@@ -62,10 +62,10 @@ func ExampleService() {
 		log.Fatalf("Failed to register service: %v", err)
 	}
 	// Boot up the entire protocol stack, do a restart and terminate
-	if err := stack.Start(ctx); err != nil {
+	if err := stack.Start(); err != nil {
 		log.Fatalf("Failed to start the protocol stack: %v", err)
 	}
-	if err := stack.Restart(ctx); err != nil {
+	if err := stack.Restart(); err != nil {
 		log.Fatalf("Failed to restart the protocol stack: %v", err)
 	}
 	if err := stack.Stop(); err != nil {

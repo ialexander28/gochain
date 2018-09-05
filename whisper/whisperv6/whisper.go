@@ -18,6 +18,7 @@ package whisperv6
 
 import (
 	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"crypto/sha256"
 	"fmt"
@@ -344,7 +345,7 @@ func (whisper *Whisper) AllowP2PMessagesFromPeer(peerID []byte) error {
 // request and respond with a number of peer-to-peer messages (possibly expired),
 // which are not supposed to be forwarded any further.
 // The whisper protocol is agnostic of the format and contents of envelope.
-func (whisper *Whisper) RequestHistoricMessages(peerID []byte, envelope *Envelope) error {
+func (whisper *Whisper) RequestHistoricMessages(ctx context.Context, peerID []byte, envelope *Envelope) error {
 	p, err := whisper.getPeer(peerID)
 	if err != nil {
 		return err
@@ -352,21 +353,21 @@ func (whisper *Whisper) RequestHistoricMessages(peerID []byte, envelope *Envelop
 	p.mu.Lock()
 	p.trusted = true
 	p.mu.Unlock()
-	return p2p.Send(p.ws, p2pRequestCode, envelope)
+	return p2p.SendCtx(ctx, p.ws, p2pRequestCode, envelope)
 }
 
 // SendP2PMessage sends a peer-to-peer message to a specific peer.
-func (whisper *Whisper) SendP2PMessage(peerID []byte, envelope *Envelope) error {
+func (whisper *Whisper) SendP2PMessage(ctx context.Context, peerID []byte, envelope *Envelope) error {
 	p, err := whisper.getPeer(peerID)
 	if err != nil {
 		return err
 	}
-	return whisper.SendP2PDirect(p, envelope)
+	return whisper.SendP2PDirect(ctx, p, envelope)
 }
 
 // SendP2PDirect sends a peer-to-peer message to a specific peer.
-func (whisper *Whisper) SendP2PDirect(peer *Peer, envelope *Envelope) error {
-	return p2p.Send(peer.ws, p2pMessageCode, envelope)
+func (whisper *Whisper) SendP2PDirect(ctx context.Context, peer *Peer, envelope *Envelope) error {
+	return p2p.SendCtx(ctx, peer.ws, p2pMessageCode, envelope)
 }
 
 // NewKeyPair generates a new cryptographic identity for the client, and injects

@@ -18,6 +18,7 @@ package p2p
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -175,7 +176,7 @@ func TestProtocolHandshake(t *testing.T) {
 			return
 		}
 
-		phs, err := rlpx.doProtoHandshake(hs0)
+		phs, err := rlpx.doProtoHandshake(context.Background(), hs0)
 		if err != nil {
 			t.Errorf("dial side proto handshake error: %v", err)
 			return
@@ -201,7 +202,7 @@ func TestProtocolHandshake(t *testing.T) {
 			return
 		}
 
-		phs, err := rlpx.doProtoHandshake(hs1)
+		phs, err := rlpx.doProtoHandshake(context.Background(), hs1)
 		if err != nil {
 			t.Errorf("listen side proto handshake error: %v", err)
 			return

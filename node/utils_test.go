@@ -56,7 +56,7 @@ type InstrumentedService struct {
 	stop      error
 
 	protocolsHook func()
-	startHook     func(context.Context, *p2p.Server)
+	startHook     func(*p2p.Server)
 	stopHook      func()
 }
 
@@ -73,9 +73,9 @@ func (s *InstrumentedService) APIs() []rpc.API {
 	return s.apis
 }
 
-func (s *InstrumentedService) Start(ctx context.Context, server *p2p.Server) error {
+func (s *InstrumentedService) Start(server *p2p.Server) error {
 	if s.startHook != nil {
-		s.startHook(ctx, server)
+		s.startHook(server)
 	}
 	return s.start
 }

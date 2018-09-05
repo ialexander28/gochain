@@ -17,6 +17,7 @@
 package p2p
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"errors"
 	"math/rand"
@@ -57,7 +58,7 @@ func (c *testTransport) doEncHandshake(prv *ecdsa.PrivateKey, dialDest *discover
 	return c.id, nil
 }
 
-func (c *testTransport) doProtoHandshake(our *protoHandshake) (*protoHandshake, error) {
+func (c *testTransport) doProtoHandshake(ctx context.Context, our *protoHandshake) (*protoHandshake, error) {
 	return &protoHandshake{ID: c.id, Name: "test"}, nil
 }
 
@@ -468,7 +469,7 @@ func (c *setupTransport) doEncHandshake(prv *ecdsa.PrivateKey, dialDest *discove
 	c.calls += "doEncHandshake,"
 	return c.id, c.encHandshakeErr
 }
-func (c *setupTransport) doProtoHandshake(our *protoHandshake) (*protoHandshake, error) {
+func (c *setupTransport) doProtoHandshake(ctx context.Context, our *protoHandshake) (*protoHandshake, error) {
 	c.calls += "doProtoHandshake,"
 	if c.protoHandshakeErr != nil {
 		return nil, c.protoHandshakeErr

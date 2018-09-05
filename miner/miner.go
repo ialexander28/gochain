@@ -58,16 +58,16 @@ type Miner struct {
 	shouldStart int32 // should start indicates whether we should start after sync
 }
 
-func New(ctx context.Context, eth Backend, config *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine) *Miner {
+func New(eth Backend, config *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine) *Miner {
 	miner := &Miner{
 		eth:      eth,
 		mux:      mux,
 		engine:   engine,
-		worker:   newWorker(ctx, config, engine, common.Address{}, eth, mux),
+		worker:   newWorker(config, engine, common.Address{}, eth, mux),
 		canStart: 1,
 	}
 	miner.Register(NewCpuAgent(eth.BlockChain(), engine))
-	go miner.update(ctx)
+	go miner.update()
 
 	return miner
 }
@@ -76,7 +76,7 @@ func New(ctx context.Context, eth Backend, config *params.ChainConfig, mux *even
 // It's entered once and as soon as `Done` or `Failed` has been broadcasted the events are unregistered and
 // the loop is exited. This to prevent a major security vuln where external parties can DOS you with blocks
 // and halt your mining operation for as long as the DOS continues.
-func (self *Miner) update(ctx context.Context) {
+func (self *Miner) update() {
 	events := self.mux.Subscribe(downloader.StartEvent{}, downloader.DoneEvent{}, downloader.FailedEvent{})
 out:
 	for ev := range events.Chan() {
@@ -94,7 +94,7 @@ out:
 			atomic.StoreInt32(&self.canStart, 1)
 			atomic.StoreInt32(&self.shouldStart, 0)
 			if shouldStart {
-				self.Start(ctx, self.coinbase)
+				self.Start(self.coinbase)
 			}
 			// unsubscribe. we're only interested in this event once
 			events.Unsubscribe()
@@ -104,7 +104,7 @@ out:
 	}
 }
 
-func (self *Miner) Start(ctx context.Context, coinbase common.Address) {
+func (self *Miner) Start(coinbase common.Address) {
 	atomic.StoreInt32(&self.shouldStart, 1)
 	self.worker.setEtherbase(coinbase)
 	self.coinbase = coinbase
@@ -116,8 +116,8 @@ func (self *Miner) Start(ctx context.Context, coinbase common.Address) {
 	atomic.StoreInt32(&self.mining, 1)
 
 	log.Info("Starting mining operation")
-	self.worker.start(ctx)
-	self.worker.commitNewWork(ctx)
+	self.worker.start()
+	self.worker.commitNewWork(context.Background())
 }
 
 func (self *Miner) Stop() {
@@ -127,9 +127,8 @@ func (self *Miner) Stop() {
 }
 
 func (self *Miner) Register(agent Agent) {
-	ctx := context.TODO()
 	if self.Mining() {
-		agent.Start(ctx)
+		agent.Start()
 	}
 	self.worker.register(agent)
 }
@@ -166,8 +165,8 @@ func (self *Miner) SetExtra(extra []byte) error {
 }
 
 // Pending returns the currently pending block and associated state.
-func (self *Miner) Pending() (*types.Block, *state.StateDB) {
-	return self.worker.pending()
+func (self *Miner) Pending(ctx context.Context) (*types.Block, *state.StateDB) {
+	return self.worker.pending(ctx)
 }
 
 // PendingQuery calls fn with the pending (ready-only) state.

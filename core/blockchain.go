@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru"
+	"go.opencensus.io/trace"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 
 	"github.com/gochain-io/gochain/common"
@@ -137,7 +138,7 @@ type BlockChain struct {
 // NewBlockChain returns a fully initialised block chain using information
 // available in the database. It initialises the default Ethereum Validator and
 // Processor.
-func NewBlockChain(ctx context.Context, db ethdb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config) (*BlockChain, error) {
+func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config) (*BlockChain, error) {
 	if cacheConfig == nil {
 		cacheConfig = &CacheConfig{
 			TrieNodeLimit: 256 * 1024 * 1024,
@@ -197,7 +198,7 @@ func NewBlockChain(ctx context.Context, db ethdb.Database, cacheConfig *CacheCon
 		}
 	}
 	// Take ownership of this particular state
-	go bc.update(ctx)
+	go bc.update()
 	return bc, nil
 }
 
@@ -1059,8 +1060,11 @@ func (bc *BlockChain) insertChain(ctx context.Context, chain types.Blocks) (int,
 	abort, results := bc.engine.VerifyHeaders(ctx, bc, headers, seals)
 	defer close(abort)
 
+	// Pre-compute and cache sender ecrecover for each transaction.
 	go func() {
-		// Pre-compute and cache sender ecrecover for each transaction.
+		ctx, span := trace.StartSpan(ctx, "parWorkers")
+		defer span.End()
+
 		for _, block := range chain {
 			signer := types.MakeSigner(bc.Config(), block.Number())
 			var wi int32 = -1
@@ -1071,6 +1075,8 @@ func (bc *BlockChain) insertChain(ctx context.Context, chain types.Blocks) (int,
 			for s := 0; s < bc.parWorkers; s++ {
 				go func() {
 					defer wg.Done()
+					ctx, span := trace.StartSpan(ctx, "parWorker")
+					defer span.End()
 					for i := atomic.AddInt32(&wi, 1); i < l32; i = atomic.AddInt32(&wi, 1) {
 						txs[i].Hash()
 						if _, err := types.Sender(ctx, signer, txs[i]); err != nil {
@@ -1080,6 +1086,10 @@ func (bc *BlockChain) insertChain(ctx context.Context, chain types.Blocks) (int,
 				}()
 			}
 			wg.Wait()
+			span.Annotate([]trace.Attribute{
+				trace.Int64Attribute("num", int64(block.NumberU64())),
+				trace.Int64Attribute("txs", int64(l32)),
+			}, "finished block")
 		}
 	}()
 
@@ -1416,13 +1426,15 @@ func (bc *BlockChain) PostChainEvents(events []interface{}, logs []*types.Log) {
 	}
 }
 
-func (bc *BlockChain) update(ctx context.Context) {
+func (bc *BlockChain) update() {
 	futureTimer := time.NewTicker(5 * time.Second)
 	defer futureTimer.Stop()
 	for {
 		select {
 		case <-futureTimer.C:
+			ctx, span := trace.StartSpan(context.Background(), "BlockChain.update-futureTimer")
 			bc.procFutureBlocks(ctx)
+			span.End()
 		case <-bc.quit:
 			return
 		}
